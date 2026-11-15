@@ -1,1 +1,37 @@
-
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Arrange files
+        run: |
+          R=app/src/main
+          mkdir -p $R/java/de/pozivai/deliverytimer $R/assets $R/res/values $R/res/drawable $R/res/mipmap-anydpi-v26
+          [ -f MainActivity.java ] && mv MainActivity.java $R/java/de/pozivai/deliverytimer/
+          [ -f AndroidManifest.xml ] && mv AndroidManifest.xml $R/
+          [ -f index.html ] && mv index.html $R/assets/
+          [ -f strings.xml ] && mv strings.xml $R/res/values/
+          [ -f styles.xml ] && mv styles.xml $R/res/values/
+          [ -f ic_fg.xml ] && mv ic_fg.xml $R/res/drawable/
+          [ -f ic_launcher.xml ] && mv ic_launcher.xml $R/res/mipmap-anydpi-v26/
+          for f in build*.gradle; do grep -q namespace "$f" && mv "$f" app/build.gradle; done
+          rm -f build*.gradle
+          echo "plugins { id 'com.android.application' version '8.7.3' apply false }" > build.gradle
+          find . -path ./.git -prune -o -type f -print
+      - run: gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DeliveryTimer-apk
+          path: app/build/outputs/apk/debug/*.apk
