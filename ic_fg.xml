@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- секундомер -->
+    <path android:fillColor="#0f1115" android:pathData="M48,26h12v6h-12z"/>
+    <path android:fillColor="#0f1115"
+        android:pathData="M54,34a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z"/>
+    <path android:fillColor="#3ddc84"
+        android:pathData="M54,39a17,17 0,1 1,0 34a17,17 0,1 1,0 -34z"/>
+    <!-- галочка -->
+    <path android:strokeColor="#0f1115" android:strokeWidth="4.5"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M45,56l6,6l12,-13"/>
+</vector>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Хронометраж доставки</title>
+<style>
+  :root{
+    --bg:#0f1115;--card:#181b22;--line:#262a33;--txt:#eef0f4;--mut:#8b93a3;
+    --acc:#3ddc84;--warn:#ffb020;--bad:#ff5a5f;--blue:#4ea1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 20px)}
+  .wrap{max-width:520px;margin:0 auto}
+  h1{font-size:18px;margin:0 0 14px;font-weight:600;color:var(--mut)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--mut);margin:0 0 6px}
+  input{width:100%;font-size:22px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b0d11;color:var(--txt)}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .hint{font-size:14px;color:var(--mut);margin-top:10px}
+  button{font:inherit;border:0;border-radius:14px;padding:14px;cursor:pointer;color:var(--txt);background:#262a33;font-size:16px}
+  button:active{transform:scale(.98)}
+  .primary{background:var(--acc);color:#04210f;font-weight:700;font-size:18px;width:100%}
+  .done{width:100%;height:110px;font-size:42px;background:var(--acc);color:#04210f;font-weight:800;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .done span{font-size:20px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px}
+  .v.small{font-size:20px}
+  .bar{height:10px;background:#0b0d11;border-radius:6px;overflow:hidden;margin-top:12px}
+  .bar>i{display:block;height:100%;background:var(--blue);width:0}
+  .cur .v{font-size:60px;letter-spacing:-1px}
+  .sw small{font-size:.5em;opacity:.7}
+  .cd{font-size:18px;margin-top:4px}
+  .free .v{font-size:48px;text-align:center}
+  .free .row{margin-top:10px}
+  .cur .target{font-size:15px;color:var(--mut);margin-top:2px}
+  .ok{color:var(--acc)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .status{font-size:17px;font-weight:600;text-align:center;padding:12px;border-radius:12px;background:#0b0d11}
+  .tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .tools button{font-size:14px;padding:12px 6px}
+  .paused{background:var(--warn);color:#2a1a00}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+  td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--mut);font-weight:500;font-size:12px}
+  td:last-child,th:last-child{text-align:right}
+  .hidden{display:none!important}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal .card{max-width:360px;width:100%}
+  .modal p{margin:0 0 14px;font-size:17px}
+  .finish{text-align:center}
+  .finish .v{font-size:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Хронометраж доставки</h1>
+
+  <!-- SETUP -->
+  <div id="setup">
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="cnt">Посылок на смену</label>
+          <input id="cnt" type="number" inputmode="numeric" min="1" value="80">
+        </div>
+        <div>
+          <label for="hrs">Смена, часов</label>
+          <input id="hrs" type="number" inputmode="decimal" min="0.5" step="0.5" value="8">
+        </div>
+      </div>
+      <div class="hint" id="preview"></div>
+    </div>
+    <button class="primary" id="startBtn">Начать смену</button>
+  </div>
+
+  <!-- RUN -->
+  <div id="run" class="hidden">
+    <div class="card">
+      <div class="grid">
+        <div><div class="k">Прошло смены</div><div class="v" id="elapsed">0:00:00</div></div>
+        <div><div class="k">Осталось смены</div><div class="v" id="left">0:00:00</div></div>
+      </div>
+      <div class="bar"><i id="timeBar"></i></div>
+    </div>
+
+    <div class="card cur">
+      <div class="k">⏱ Секундомер · посылка <b id="curNo">1</b> из <b id="total">0</b></div>
+      <div class="v sw" id="curTime">00:00<small>.00</small></div>
+      <div class="cd"><span id="cdLbl">До конца нормы:</span> <b id="curCount">0:00</b></div>
+      <div class="target">Норма на эту посылку: <b id="curTarget">0:00</b></div>
+      <div class="bar"><i id="curBar"></i></div>
+    </div>
+
+    <button class="done" id="doneBtn">✓ <span>Доставлено</span></button>
+
+    <div class="card" style="margin-top:12px">
+      <div class="grid">
+        <div><div class="k">На следующую</div><div class="v small" id="nextT">—</div></div>
+        <div><div class="k">Плановая норма</div><div class="v small" id="planT">—</div></div>
+        <div><div class="k">Доставлено</div><div class="v small" id="doneCnt">0</div></div>
+        <div><div class="k">Осталось посылок</div><div class="v small" id="leftCnt">0</div></div>
+      </div>
+      <div class="bar"><i id="cntBar" style="background:var(--acc)"></i></div>
+    </div>
+
+    <div class="card"><div class="status" id="status">—</div></div>
+
+    <div class="tools">
+      <button id="pauseBtn">Перерыв</button>
+      <button id="undoBtn">Отменить ✓</button>
+      <button id="resetBtn">Завершить</button>
+    </div>
+
+    <div class="card free" style="margin-top:12px">
+      <div class="k">Свободный секундомер</div>
+      <div class="v sw" id="fsw">00:00<small>.00</small></div>
+      <div class="row"><button id="fswStart" style="background:var(--acc);color:#04210f;font-weight:700">Старт</button><button id="fswLap">Круг</button><button id="fswReset">Сброс</button></div>
+      <table style="margin-top:8px"><tbody id="fswLaps"></tbody></table>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="k" style="margin-bottom:6px">Журнал</div>
+      <table><thead><tr><th>#</th><th>Время</th><th>Норма</th><th>±</th></tr></thead><tbody id="log"></tbody></table>
+    </div>
+  </div>
+
+  <!-- FINISH -->
+  <div id="finish" class="hidden">
+    <div class="card finish">
+      <div class="k">Все посылки доставлены</div>
+      <div class="v ok" id="fTotal">0:00:00</div>
+      <div class="hint" id="fInfo"></div>
+    </div>
+    <button class="primary" id="newBtn">Новая смена</button>
+    <div class="card" style="margin-top:12px">
+      <table><thead><tr><th>#</th><th>Время</th><th>Норма</th><th>±</th></tr></thead><tbody id="fLog"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="modal">
+  <div class="card">
+    <p id="mText"></p>
+    <div class="row"><button id="mNo">Нет</button><button id="mYes" style="background:var(--bad)">Да</button></div>
+  </div>
+</div>
+
+<script>
+const KEY='delivery-timer-v1';
+const $=id=>document.getElementById(id);
+let S=null;
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){return null}}
+
+function fmt(ms,withH){
+  const neg=ms<0; ms=Math.abs(ms);
+  const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
+  const p=n=>String(n).padStart(2,'0');
+  const out=(withH||h>0)?`${h}:${p(m)}:${p(s)}`:`${m}:${p(s)}`;
+  return (neg?'−':'')+out;
+}
+// working time (pauses excluded)
+function fmtSW(ms){
+  ms=Math.max(0,ms);
+  const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60,cs=Math.floor(ms%1000/10);
+  const p=n=>String(n).padStart(2,'0');
+  return (h?h+':':'')+p(m)+':'+p(s)+'<small>.'+p(cs)+'</small>';
+}
+function work(now){
+  let paused=S.pausedTotal + (S.pauseStart? now-S.pauseStart : 0);
+  return now - S.start - paused;
+}
+
+function preview(){
+  const n=+$('cnt').value, h=+$('hrs').value;
+  $('preview').textContent = (n>0&&h>0) ? `Норма: ${fmt(h*3600000/n)} на посылку · ${(n/h).toFixed(1)} посылок в час` : '';
+}
+$('cnt').oninput=preview; $('hrs').oninput=preview;
+
+$('startBtn').onclick=()=>{
+  const n=Math.floor(+$('cnt').value), h=+$('hrs').value;
+  if(!(n>0&&h>0)) return;
+  const now=Date.now();
+  S={total:n,shift:h*3600000,start:now,pausedTotal:0,pauseStart:null,
+     curStartWork:0,curTarget:h*3600000/n,log:[]};
+  save(); show();
+};
+
+$('doneBtn').onclick=()=>{
+  if(S.pauseStart) togglePause();
+  const now=Date.now(), w=work(now);
+  const dur=w - S.curStartWork;
+  S.log.push({dur,target:S.curTarget,at:w});
+  S.curStartWork=w;
+  const remParcels=S.total - S.log.length;
+  if(remParcels<=0){S.finished=true; save(); show(); return;}
+  S.curTarget=Math.max(0,(S.shift - w)/remParcels);
+  save(); render();
+  try{ if(window.Android&&Android.vibrate) Android.vibrate(80); else if(navigator.vibrate) navigator.vibrate(60);}catch(e){}
+};
+
+$('undoBtn').onclick=()=>{
+  if(!S.log.length) return;
+  ask('Отменить последнюю отметку? Время вернётся к посылке '+S.log.length+'.',()=>{
+    const last=S.log.pop();
+    S.curStartWork = last.at - last.dur;
+    S.curTarget = last.target;
+    save(); render();
+  });
+};
+
+function togglePause(){
+  const now=Date.now();
+  if(S.pauseStart){S.pausedTotal+=now-S.pauseStart;S.pauseStart=null}
+  else S.pauseStart=now;
+  save(); render();
+}
+$('pauseBtn').onclick=togglePause;
+
+$('resetBtn').onclick=()=>ask('Завершить смену и сбросить данные?',()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()});
+$('newBtn').onclick=()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()};
+
+function ask(text,yes){
+  $('mText').textContent=text; $('modal').classList.remove('hidden');
+  $('mYes').onclick=()=>{$('modal').classList.add('hidden');yes()};
+  $('mNo').onclick=()=>$('modal').classList.add('hidden');
+}
+
+function logRows(){
+  return S.log.map((r,i)=>{
+    const d=r.dur-r.target, c=d<=0?'ok':'bad';
+    return `<tr><td>${i+1}</td><td>${fmt(r.dur)}</td><td>${fmt(r.target)}</td><td class="${c}">${d<=0?'':'+'}${fmt(d)}</td></tr>`;
+  }).reverse().join('');
+}
+
+function show(){
+  $('setup').classList.toggle('hidden',!!S);
+  $('run').classList.toggle('hidden',!S||!!S.finished);
+  $('finish').classList.toggle('hidden',!S||!S.finished);
+  if(!S){preview();return}
+  if(S.finished){
+    const w=S.log.length?S.log[S.log.length-1].at:0;
+    $('fTotal').textContent=fmt(w,true);
+    const diff=S.shift-w;
+    $('fInfo').innerHTML=`${S.total} посылок · средняя ${fmt(w/S.total)} · ${diff>=0?'<span class="ok">запас '+fmt(diff,true)+'</span>':'<span class="bad">перебор '+fmt(-diff,true)+'</span>'}`;
+    $('fLog').innerHTML=logRows();
+    return;
+  }
+  render();
+}
+
+function render(){
+  if(!S||S.finished) return;
+  const now=Date.now(), w=work(now);
+  const done=S.log.length, rem=S.total-done;
+  const cur=w-S.curStartWork;
+  const over=cur-S.curTarget;
+  const plan=S.shift/S.total;
+
+  $('elapsed').textContent=fmt(w,true);
+  const left=S.shift-w;
+  $('left').textContent=fmt(left,true);
+  $('left').className='v'+(left<0?' bad':'');
+  $('timeBar').style.width=Math.min(100,w/S.shift*100)+'%';
+
+  $('curNo').textContent=done+1; $('total').textContent=S.total;
+  $('curTime').innerHTML=fmtSW(cur);
+  $('cdLbl').textContent=over<=0?'До конца нормы:':'Сверх нормы:';
+  $('curCount').textContent=(over<=0?'':'+')+fmt(Math.abs(over));
+  $('curCount').className=over<=0?'':'bad';
+  $('curTarget').textContent=fmt(S.curTarget);
+  const ratio=S.curTarget>0?cur/S.curTarget:2;
+  const cls=ratio<0.8?'ok':ratio<=1?'warn':'bad';
+  $('curTime').className='v '+cls;
+  const cb=$('curBar'); cb.style.width=Math.min(100,ratio*100)+'%';
+  cb.style.background= cls==='ok'?'var(--acc)':cls==='warn'?'var(--warn)':'var(--bad)';
+
+  // next: if current is delivered right now
+  if(rem-1>0){
+    const nt=(S.shift-w)/(rem-1);
+    $('nextT').textContent=fmt(Math.max(0,nt));
+    $('nextT').className='v small '+(nt>=plan?'ok':nt>=plan*0.8?'warn':'bad');
+  } else {$('nextT').textContent='последняя';$('nextT').className='v small'}
+  $('planT').textContent=fmt(plan);
+  $('doneCnt').textContent=done; $('leftCnt').textContent=rem;
+  $('cntBar').style.width=(done/S.total*100)+'%';
+
+  // ahead / behind schedule
+  const expected=w/plan;           // how many should be done by now
+  const delta=done-expected;       // in parcels
+  const st=$('status');
+  if(Math.abs(delta)<0.5){st.innerHTML='<span class="ok">Идёте по графику</span>'}
+  else if(delta>0){st.innerHTML=`<span class="ok">Опережение: ${delta.toFixed(1)} пос. (≈ ${fmt(delta*plan)})</span>`}
+  else{st.innerHTML=`<span class="bad">Отставание: ${(-delta).toFixed(1)} пос. (≈ ${fmt(-delta*plan)})</span>`}
+
+  const pb=$('pauseBtn');
+  pb.textContent=S.pauseStart?'▶ Продолжить':'Перерыв';
+  pb.classList.toggle('paused',!!S.pauseStart);
+  if(S.pauseStart) st.innerHTML='<span class="warn">Перерыв — время смены остановлено</span>';
+
+  $('undoBtn').disabled=!done; $('undoBtn').style.opacity=done?1:.4;
+  const tb=$('log'); const html=logRows(); if(tb._h!==html){tb.innerHTML=html;tb._h=html}
+}
+
+// free stopwatch
+const SWK='delivery-sw-v1';
+let SW={run:false,t0:0,acc:0,laps:[]};
+try{const r=localStorage.getItem(SWK); if(r) SW=JSON.parse(r)}catch(e){}
+function swSave(){try{localStorage.setItem(SWK,JSON.stringify(SW))}catch(e){}}
+function swVal(){return SW.acc+(SW.run?Date.now()-SW.t0:0)}
+function swRender(){
+  $('fsw').innerHTML=fmtSW(swVal());
+  const b=$('fswStart'); b.textContent=SW.run?'Стоп':(SW.acc?'Продолжить':'Старт');
+  b.style.background=SW.run?'var(--bad)':'var(--acc)'; b.style.color=SW.run?'#fff':'#04210f';
+}
+function swLaps(){$('fswLaps').innerHTML=SW.laps.map((l,i)=>`<tr><td>Круг ${i+1}</td><td>${fmtSW(l)}</td></tr>`).reverse().join('')}
+$('fswStart').onclick=()=>{ if(SW.run){SW.acc+=Date.now()-SW.t0;SW.run=false}else{SW.t0=Date.now();SW.run=true} swSave();swRender(); };
+$('fswLap').onclick=()=>{ if(!swVal())return; SW.laps.push(swVal()); swSave(); swLaps(); };
+$('fswReset').onclick=()=>{ SW={run:false,t0:0,acc:0,laps:[]}; swSave(); swRender(); swLaps(); };
+swLaps();
+
+S=load(); show();
+setInterval(()=>{render();swRender()},50);
+document.addEventListener('visibilitychange',render);
+</script>
+</body>
+</html>
