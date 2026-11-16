@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Хронометраж доставки</title>
+<title>Delivery Timer</title>
 <style>
   :root{
     --bg:#0f1115;--card:#181b22;--line:#262a33;--txt:#eef0f4;--mut:#8b93a3;
@@ -13,7 +13,9 @@
   html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif}
   body{padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 20px)}
   .wrap{max-width:520px;margin:0 auto}
-  h1{font-size:18px;margin:0 0 14px;font-weight:600;color:var(--mut)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
+  #lang{font-size:15px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt)}
+  h1{font-size:18px;margin:0;font-weight:600;color:var(--mut)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
   label{display:block;font-size:13px;color:var(--mut);margin:0 0 6px}
   input{width:100%;font-size:22px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b0d11;color:var(--txt)}
@@ -56,52 +58,52 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Хронометраж доставки</h1>
+  <div class="top"><h1 data-i="title"></h1><select id="lang"></select></div>
 
   <!-- SETUP -->
   <div id="setup">
     <div class="card">
       <div class="row">
         <div>
-          <label for="cnt">Посылок на смену</label>
+          <label for="cnt" data-i="parcels"></label>
           <input id="cnt" type="number" inputmode="numeric" min="1" value="80">
         </div>
         <div>
-          <label for="hrs">Смена, часов</label>
+          <label for="hrs" data-i="hours"></label>
           <input id="hrs" type="number" inputmode="decimal" min="0.5" step="0.5" value="8">
         </div>
       </div>
       <div class="hint" id="preview"></div>
     </div>
-    <button class="primary" id="startBtn">Начать смену</button>
+    <button class="primary" id="startBtn" data-i="start"></button>
   </div>
 
   <!-- RUN -->
   <div id="run" class="hidden">
     <div class="card">
       <div class="grid">
-        <div><div class="k">Прошло смены</div><div class="v" id="elapsed">0:00:00</div></div>
-        <div><div class="k">Осталось смены</div><div class="v" id="left">0:00:00</div></div>
+        <div><div class="k" data-i="elapsed"></div><div class="v" id="elapsed">0:00:00</div></div>
+        <div><div class="k" data-i="left"></div><div class="v" id="left">0:00:00</div></div>
       </div>
       <div class="bar"><i id="timeBar"></i></div>
     </div>
 
     <div class="card cur">
-      <div class="k">⏱ Секундомер · посылка <b id="curNo">1</b> из <b id="total">0</b></div>
+      <div class="k" id="swHead"></div>
       <div class="v sw" id="curTime">00:00<small>.00</small></div>
-      <div class="cd"><span id="cdLbl">До конца нормы:</span> <b id="curCount">0:00</b></div>
-      <div class="target">Норма на эту посылку: <b id="curTarget">0:00</b></div>
+      <div class="cd"><span id="cdLbl"></span> <b id="curCount">0:00</b></div>
+      <div class="target"><span data-i="normThis"></span> <b id="curTarget">0:00</b></div>
       <div class="bar"><i id="curBar"></i></div>
     </div>
 
-    <button class="done" id="doneBtn">✓ <span>Доставлено</span></button>
+    <button class="done" id="doneBtn">✓ <span data-i="deliveredBtn"></span></button>
 
     <div class="card" style="margin-top:12px">
       <div class="grid">
-        <div><div class="k">На следующую</div><div class="v small" id="nextT">—</div></div>
-        <div><div class="k">Плановая норма</div><div class="v small" id="planT">—</div></div>
-        <div><div class="k">Доставлено</div><div class="v small" id="doneCnt">0</div></div>
-        <div><div class="k">Осталось посылок</div><div class="v small" id="leftCnt">0</div></div>
+        <div><div class="k" data-i="next"></div><div class="v small" id="nextT">—</div></div>
+        <div><div class="k" data-i="plan"></div><div class="v small" id="planT">—</div></div>
+        <div><div class="k" data-i="doneCnt"></div><div class="v small" id="doneCnt">0</div></div>
+        <div><div class="k" data-i="leftCnt"></div><div class="v small" id="leftCnt">0</div></div>
       </div>
       <div class="bar"><i id="cntBar" style="background:var(--acc)"></i></div>
     </div>
@@ -109,34 +111,34 @@
     <div class="card"><div class="status" id="status">—</div></div>
 
     <div class="tools">
-      <button id="pauseBtn">Перерыв</button>
-      <button id="undoBtn">Отменить ✓</button>
-      <button id="resetBtn">Завершить</button>
+      <button id="pauseBtn"></button>
+      <button id="undoBtn" data-i="undo"></button>
+      <button id="resetBtn" data-i="finish"></button>
     </div>
 
     <div class="card free" style="margin-top:12px">
-      <div class="k">Свободный секундомер</div>
+      <div class="k" data-i="freeSw"></div>
       <div class="v sw" id="fsw">00:00<small>.00</small></div>
-      <div class="row"><button id="fswStart" style="background:var(--acc);color:#04210f;font-weight:700">Старт</button><button id="fswLap">Круг</button><button id="fswReset">Сброс</button></div>
+      <div class="row"><button id="fswStart" style="background:var(--acc);color:#04210f;font-weight:700"></button><button id="fswLap" data-i="lap"></button><button id="fswReset" data-i="reset"></button></div>
       <table style="margin-top:8px"><tbody id="fswLaps"></tbody></table>
     </div>
 
     <div class="card" style="margin-top:12px">
-      <div class="k" style="margin-bottom:6px">Журнал</div>
-      <table><thead><tr><th>#</th><th>Время</th><th>Норма</th><th>±</th></tr></thead><tbody id="log"></tbody></table>
+      <div class="k" style="margin-bottom:6px" data-i="log"></div>
+      <table><thead><tr><th>#</th><th data-i="time"></th><th data-i="norm"></th><th>±</th></tr></thead><tbody id="log"></tbody></table>
     </div>
   </div>
 
   <!-- FINISH -->
   <div id="finish" class="hidden">
     <div class="card finish">
-      <div class="k">Все посылки доставлены</div>
+      <div class="k" data-i="allDone"></div>
       <div class="v ok" id="fTotal">0:00:00</div>
       <div class="hint" id="fInfo"></div>
     </div>
-    <button class="primary" id="newBtn">Новая смена</button>
+    <button class="primary" id="newBtn" data-i="newShift"></button>
     <div class="card" style="margin-top:12px">
-      <table><thead><tr><th>#</th><th>Время</th><th>Норма</th><th>±</th></tr></thead><tbody id="fLog"></tbody></table>
+      <table><thead><tr><th>#</th><th data-i="time"></th><th data-i="norm"></th><th>±</th></tr></thead><tbody id="fLog"></tbody></table>
     </div>
   </div>
 </div>
@@ -144,11 +146,39 @@
 <div class="modal hidden" id="modal">
   <div class="card">
     <p id="mText"></p>
-    <div class="row"><button id="mNo">Нет</button><button id="mYes" style="background:var(--bad)">Да</button></div>
+    <div class="row"><button id="mNo" data-i="no"></button><button id="mYes" style="background:var(--bad)" data-i="yes"></button></div>
   </div>
 </div>
 
 <script>
+
+const L={
+en:{_:'English',title:'Delivery Timer',parcels:'Parcels per shift',hours:'Shift, hours',preview:'Norm: {t} per parcel · {r} parcels per hour',start:'Start shift',elapsed:'Shift elapsed',left:'Shift left',swHead:'⏱ Stopwatch · parcel {n} of {t}',toNorm:'Until norm ends:',overNorm:'Over norm:',normThis:'Norm for this parcel:',deliveredBtn:'Delivered',next:'For next parcel',plan:'Planned norm',doneCnt:'Delivered',leftCnt:'Parcels left',last:'last',onTrack:'On schedule',ahead:'Ahead: {n} parcels (≈ {t})',behind:'Behind: {n} parcels (≈ {t})',paused:'Break — shift time stopped',pause:'Break',resume:'Resume',undo:'Undo ✓',finish:'End shift',freeSw:'Free stopwatch',swStart:'Start',stop:'Stop',lap:'Lap',reset:'Reset',log:'Log',time:'Time',norm:'Norm',allDone:'All parcels delivered',fInfo:'{n} parcels · average {a}',reserve:'reserve {t}',overrun:'overrun {t}',newShift:'New shift',undoAsk:'Undo the last mark? Time returns to parcel {n}.',resetAsk:'End the shift and reset data?',yes:'Yes',no:'No'},
+de:{_:'Deutsch',title:'Zustell-Timer',parcels:'Pakete pro Schicht',hours:'Schicht, Stunden',preview:'Norm: {t} pro Paket · {r} Pakete pro Stunde',start:'Schicht starten',elapsed:'Schicht vergangen',left:'Schicht übrig',swHead:'⏱ Stoppuhr · Paket {n} von {t}',toNorm:'Bis Normende:',overNorm:'Über Norm:',normThis:'Norm für dieses Paket:',deliveredBtn:'Zugestellt',next:'Für nächstes Paket',plan:'Plan-Norm',doneCnt:'Zugestellt',leftCnt:'Pakete übrig',last:'letztes',onTrack:'Im Plan',ahead:'Vorsprung: {n} Pakete (≈ {t})',behind:'Rückstand: {n} Pakete (≈ {t})',paused:'Pause — Schichtzeit gestoppt',pause:'Pause',resume:'Weiter',undo:'Rückgängig ✓',finish:'Schicht beenden',freeSw:'Freie Stoppuhr',swStart:'Start',stop:'Stopp',lap:'Runde',reset:'Zurücksetzen',log:'Protokoll',time:'Zeit',norm:'Norm',allDone:'Alle Pakete zugestellt',fInfo:'{n} Pakete · Durchschnitt {a}',reserve:'Reserve {t}',overrun:'Überzogen {t}',newShift:'Neue Schicht',undoAsk:'Letzte Markierung rückgängig machen? Zeit geht zurück zu Paket {n}.',resetAsk:'Schicht beenden und Daten löschen?',yes:'Ja',no:'Nein'},
+ru:{_:'Русский',title:'Хронометраж доставки',parcels:'Посылок на смену',hours:'Смена, часов',preview:'Норма: {t} на посылку · {r} посылок в час',start:'Начать смену',elapsed:'Прошло смены',left:'Осталось смены',swHead:'⏱ Секундомер · посылка {n} из {t}',toNorm:'До конца нормы:',overNorm:'Сверх нормы:',normThis:'Норма на эту посылку:',deliveredBtn:'Доставлено',next:'На следующую',plan:'Плановая норма',doneCnt:'Доставлено',leftCnt:'Осталось посылок',last:'последняя',onTrack:'Идёте по графику',ahead:'Опережение: {n} пос. (≈ {t})',behind:'Отставание: {n} пос. (≈ {t})',paused:'Перерыв — время смены остановлено',pause:'Перерыв',resume:'Продолжить',undo:'Отменить ✓',finish:'Завершить',freeSw:'Свободный секундомер',swStart:'Старт',stop:'Стоп',lap:'Круг',reset:'Сброс',log:'Журнал',time:'Время',norm:'Норма',allDone:'Все посылки доставлены',fInfo:'{n} посылок · средняя {a}',reserve:'запас {t}',overrun:'перебор {t}',newShift:'Новая смена',undoAsk:'Отменить последнюю отметку? Время вернётся к посылке {n}.',resetAsk:'Завершить смену и сбросить данные?',yes:'Да',no:'Нет'},
+uk:{_:'Українська',title:'Хронометраж доставки',parcels:'Посилок на зміну',hours:'Зміна, годин',preview:'Норма: {t} на посилку · {r} посилок на годину',start:'Почати зміну',elapsed:'Минуло зміни',left:'Залишилось зміни',swHead:'⏱ Секундомір · посилка {n} з {t}',toNorm:'До кінця норми:',overNorm:'Понад норму:',normThis:'Норма на цю посилку:',deliveredBtn:'Доставлено',next:'На наступну',plan:'Планова норма',doneCnt:'Доставлено',leftCnt:'Залишилось посилок',last:'остання',onTrack:'Йдете за графіком',ahead:'Випередження: {n} пос. (≈ {t})',behind:'Відставання: {n} пос. (≈ {t})',paused:'Перерва — час зміни зупинено',pause:'Перерва',resume:'Продовжити',undo:'Скасувати ✓',finish:'Завершити',freeSw:'Вільний секундомір',swStart:'Старт',stop:'Стоп',lap:'Коло',reset:'Скинути',log:'Журнал',time:'Час',norm:'Норма',allDone:'Усі посилки доставлено',fInfo:'{n} посилок · середня {a}',reserve:'запас {t}',overrun:'перевищення {t}',newShift:'Нова зміна',undoAsk:'Скасувати останню позначку? Час повернеться до посилки {n}.',resetAsk:'Завершити зміну та скинути дані?',yes:'Так',no:'Ні'},
+pl:{_:'Polski',title:'Timer dostaw',parcels:'Paczek na zmianę',hours:'Zmiana, godzin',preview:'Norma: {t} na paczkę · {r} paczek na godzinę',start:'Rozpocznij zmianę',elapsed:'Minęło zmiany',left:'Pozostało zmiany',swHead:'⏱ Stoper · paczka {n} z {t}',toNorm:'Do końca normy:',overNorm:'Ponad normę:',normThis:'Norma na tę paczkę:',deliveredBtn:'Dostarczono',next:'Na następną',plan:'Norma planowa',doneCnt:'Dostarczono',leftCnt:'Pozostało paczek',last:'ostatnia',onTrack:'Zgodnie z planem',ahead:'Przed planem: {n} pacz. (≈ {t})',behind:'Opóźnienie: {n} pacz. (≈ {t})',paused:'Przerwa — czas zmiany zatrzymany',pause:'Przerwa',resume:'Wznów',undo:'Cofnij ✓',finish:'Zakończ',freeSw:'Wolny stoper',swStart:'Start',stop:'Stop',lap:'Okrążenie',reset:'Reset',log:'Dziennik',time:'Czas',norm:'Norma',allDone:'Wszystkie paczki dostarczone',fInfo:'{n} paczek · średnio {a}',reserve:'zapas {t}',overrun:'przekroczenie {t}',newShift:'Nowa zmiana',undoAsk:'Cofnąć ostatnie oznaczenie? Czas wróci do paczki {n}.',resetAsk:'Zakończyć zmianę i wyczyścić dane?',yes:'Tak',no:'Nie'},
+ro:{_:'Română',title:'Cronometru livrări',parcels:'Colete pe tură',hours:'Tură, ore',preview:'Normă: {t} pe colet · {r} colete pe oră',start:'Începe tura',elapsed:'Tură trecută',left:'Tură rămasă',swHead:'⏱ Cronometru · colet {n} din {t}',toNorm:'Până la final normă:',overNorm:'Peste normă:',normThis:'Normă pentru acest colet:',deliveredBtn:'Livrat',next:'Pentru următorul',plan:'Normă planificată',doneCnt:'Livrate',leftCnt:'Colete rămase',last:'ultimul',onTrack:'Conform programului',ahead:'Avans: {n} colete (≈ {t})',behind:'Întârziere: {n} colete (≈ {t})',paused:'Pauză — timpul turei oprit',pause:'Pauză',resume:'Continuă',undo:'Anulează ✓',finish:'Încheie tura',freeSw:'Cronometru liber',swStart:'Start',stop:'Stop',lap:'Tur',reset:'Resetare',log:'Jurnal',time:'Timp',norm:'Normă',allDone:'Toate coletele livrate',fInfo:'{n} colete · medie {a}',reserve:'rezervă {t}',overrun:'depășire {t}',newShift:'Tură nouă',undoAsk:'Anulezi ultima marcare? Timpul revine la coletul {n}.',resetAsk:'Închei tura și ștergi datele?',yes:'Da',no:'Nu'},
+tr:{_:'Türkçe',title:'Teslimat Zamanlayıcı',parcels:'Vardiya başına paket',hours:'Vardiya, saat',preview:'Norm: paket başına {t} · saatte {r} paket',start:'Vardiyayı başlat',elapsed:'Geçen vardiya',left:'Kalan vardiya',swHead:'⏱ Kronometre · paket {n} / {t}',toNorm:'Norm bitimine:',overNorm:'Norm aşımı:',normThis:'Bu paket için norm:',deliveredBtn:'Teslim edildi',next:'Sonraki paket için',plan:'Planlanan norm',doneCnt:'Teslim edilen',leftCnt:'Kalan paket',last:'son',onTrack:'Plana uygun',ahead:'Önde: {n} paket (≈ {t})',behind:'Geride: {n} paket (≈ {t})',paused:'Mola — vardiya süresi durduruldu',pause:'Mola',resume:'Devam',undo:'Geri al ✓',finish:'Vardiyayı bitir',freeSw:'Serbest kronometre',swStart:'Başlat',stop:'Durdur',lap:'Tur',reset:'Sıfırla',log:'Kayıt',time:'Süre',norm:'Norm',allDone:'Tüm paketler teslim edildi',fInfo:'{n} paket · ortalama {a}',reserve:'kalan {t}',overrun:'aşım {t}',newShift:'Yeni vardiya',undoAsk:'Son işaret geri alınsın mı? Süre {n}. pakete döner.',resetAsk:'Vardiya bitirilsin ve veriler silinsin mi?',yes:'Evet',no:'Hayır'}
+};
+const LK='delivery-lang';
+let lang='en';
+try{lang=localStorage.getItem(LK)||''}catch(e){}
+if(!L[lang]){const n=(navigator.language||'en').slice(0,2).toLowerCase();lang=L[n]?n:'en'}
+function t(k,v){let s=(L[lang]&&L[lang][k])||L.en[k]||k;if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s}
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.title=t('title');
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+}
+(function(){
+  const sel=document.getElementById('lang');
+  ['en','de','ru','uk','pl','ro','tr'].forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=L[k]._;sel.appendChild(o)});
+  sel.value=lang;
+  sel.onchange=()=>{lang=sel.value;try{localStorage.setItem(LK,lang)}catch(e){};applyLang();if(typeof show==='function')show();swLaps&&swLaps();};
+  applyLang();
+})();
+
 const KEY='delivery-timer-v1';
 const $=id=>document.getElementById(id);
 let S=null;
@@ -177,7 +207,7 @@ function work(now){
 
 function preview(){
   const n=+$('cnt').value, h=+$('hrs').value;
-  $('preview').textContent = (n>0&&h>0) ? `Норма: ${fmt(h*3600000/n)} на посылку · ${(n/h).toFixed(1)} посылок в час` : '';
+  $('preview').textContent = (n>0&&h>0) ? t('preview',{t:fmt(h*3600000/n),r:(n/h).toFixed(1)}) : '';
 }
 $('cnt').oninput=preview; $('hrs').oninput=preview;
 
@@ -205,7 +235,7 @@ $('doneBtn').onclick=()=>{
 
 $('undoBtn').onclick=()=>{
   if(!S.log.length) return;
-  ask('Отменить последнюю отметку? Время вернётся к посылке '+S.log.length+'.',()=>{
+  ask(t('undoAsk',{n:S.log.length}),()=>{
     const last=S.log.pop();
     S.curStartWork = last.at - last.dur;
     S.curTarget = last.target;
@@ -221,7 +251,7 @@ function togglePause(){
 }
 $('pauseBtn').onclick=togglePause;
 
-$('resetBtn').onclick=()=>ask('Завершить смену и сбросить данные?',()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()});
+$('resetBtn').onclick=()=>ask(t('resetAsk'),()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()});
 $('newBtn').onclick=()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()};
 
 function ask(text,yes){
@@ -246,7 +276,7 @@ function show(){
     const w=S.log.length?S.log[S.log.length-1].at:0;
     $('fTotal').textContent=fmt(w,true);
     const diff=S.shift-w;
-    $('fInfo').innerHTML=`${S.total} посылок · средняя ${fmt(w/S.total)} · ${diff>=0?'<span class="ok">запас '+fmt(diff,true)+'</span>':'<span class="bad">перебор '+fmt(-diff,true)+'</span>'}`;
+    $('fInfo').innerHTML=t('fInfo',{n:S.total,a:fmt(w/S.total)})+' · '+(diff>=0?'<span class="ok">'+t('reserve',{t:fmt(diff,true)})+'</span>':'<span class="bad">'+t('overrun',{t:fmt(-diff,true)})+'</span>');
     $('fLog').innerHTML=logRows();
     return;
   }
@@ -267,9 +297,9 @@ function render(){
   $('left').className='v'+(left<0?' bad':'');
   $('timeBar').style.width=Math.min(100,w/S.shift*100)+'%';
 
-  $('curNo').textContent=done+1; $('total').textContent=S.total;
+  $('swHead').textContent=t('swHead',{n:done+1,t:S.total});
   $('curTime').innerHTML=fmtSW(cur);
-  $('cdLbl').textContent=over<=0?'До конца нормы:':'Сверх нормы:';
+  $('cdLbl').textContent=over<=0?t('toNorm'):t('overNorm');
   $('curCount').textContent=(over<=0?'':'+')+fmt(Math.abs(over));
   $('curCount').className=over<=0?'':'bad';
   $('curTarget').textContent=fmt(S.curTarget);
@@ -284,7 +314,7 @@ function render(){
     const nt=(S.shift-w)/(rem-1);
     $('nextT').textContent=fmt(Math.max(0,nt));
     $('nextT').className='v small '+(nt>=plan?'ok':nt>=plan*0.8?'warn':'bad');
-  } else {$('nextT').textContent='последняя';$('nextT').className='v small'}
+  } else {$('nextT').textContent=t('last');$('nextT').className='v small'}
   $('planT').textContent=fmt(plan);
   $('doneCnt').textContent=done; $('leftCnt').textContent=rem;
   $('cntBar').style.width=(done/S.total*100)+'%';
@@ -293,14 +323,14 @@ function render(){
   const expected=w/plan;           // how many should be done by now
   const delta=done-expected;       // in parcels
   const st=$('status');
-  if(Math.abs(delta)<0.5){st.innerHTML='<span class="ok">Идёте по графику</span>'}
-  else if(delta>0){st.innerHTML=`<span class="ok">Опережение: ${delta.toFixed(1)} пос. (≈ ${fmt(delta*plan)})</span>`}
-  else{st.innerHTML=`<span class="bad">Отставание: ${(-delta).toFixed(1)} пос. (≈ ${fmt(-delta*plan)})</span>`}
+  if(Math.abs(delta)<0.5){st.innerHTML='<span class="ok">'+t('onTrack')+'</span>'}
+  else if(delta>0){st.innerHTML='<span class="ok">'+t('ahead',{n:delta.toFixed(1),t:fmt(delta*plan)})+'</span>'}
+  else{st.innerHTML='<span class="bad">'+t('behind',{n:(-delta).toFixed(1),t:fmt(-delta*plan)})+'</span>'}
 
   const pb=$('pauseBtn');
-  pb.textContent=S.pauseStart?'▶ Продолжить':'Перерыв';
+  pb.textContent=S.pauseStart?'▶ '+t('resume'):t('pause');
   pb.classList.toggle('paused',!!S.pauseStart);
-  if(S.pauseStart) st.innerHTML='<span class="warn">Перерыв — время смены остановлено</span>';
+  if(S.pauseStart) st.innerHTML='<span class="warn">'+t('paused')+'</span>';
 
   $('undoBtn').disabled=!done; $('undoBtn').style.opacity=done?1:.4;
   const tb=$('log'); const html=logRows(); if(tb._h!==html){tb.innerHTML=html;tb._h=html}
@@ -314,10 +344,10 @@ function swSave(){try{localStorage.setItem(SWK,JSON.stringify(SW))}catch(e){}}
 function swVal(){return SW.acc+(SW.run?Date.now()-SW.t0:0)}
 function swRender(){
   $('fsw').innerHTML=fmtSW(swVal());
-  const b=$('fswStart'); b.textContent=SW.run?'Стоп':(SW.acc?'Продолжить':'Старт');
+  const b=$('fswStart'); b.textContent=SW.run?t('stop'):(SW.acc?t('resume'):t('swStart'));
   b.style.background=SW.run?'var(--bad)':'var(--acc)'; b.style.color=SW.run?'#fff':'#04210f';
 }
-function swLaps(){$('fswLaps').innerHTML=SW.laps.map((l,i)=>`<tr><td>Круг ${i+1}</td><td>${fmtSW(l)}</td></tr>`).reverse().join('')}
+function swLaps(){$('fswLaps').innerHTML=SW.laps.map((l,i)=>`<tr><td>${t('lap')} ${i+1}</td><td>${fmtSW(l)}</td></tr>`).reverse().join('')}
 $('fswStart').onclick=()=>{ if(SW.run){SW.acc+=Date.now()-SW.t0;SW.run=false}else{SW.t0=Date.now();SW.run=true} swSave();swRender(); };
 $('fswLap').onclick=()=>{ if(!swVal())return; SW.laps.push(swVal()); swSave(); swLaps(); };
 $('fswReset').onclick=()=>{ SW={run:false,t0:0,acc:0,laps:[]}; swSave(); swRender(); swLaps(); };
