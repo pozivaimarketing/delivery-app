@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Delivery Timer</title>
+<style>
+  :root{
+    --bg:#0f1115;--card:#181b22;--line:#262a33;--txt:#eef0f4;--mut:#8b93a3;
+    --acc:#3ddc84;--warn:#ffb020;--bad:#ff5a5f;--blue:#4ea1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+  body{padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 20px)}
+  .wrap{max-width:520px;margin:0 auto}
+  .top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
+  #lang{font-size:15px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt)}
+  h1{font-size:18px;margin:0;font-weight:600;color:var(--mut)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--mut);margin:0 0 6px}
+  input{width:100%;font-size:22px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b0d11;color:var(--txt)}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .hint{font-size:14px;color:var(--mut);margin-top:10px}
+  button{font:inherit;border:0;border-radius:14px;padding:14px;cursor:pointer;color:var(--txt);background:#262a33;font-size:16px}
+  button:active{transform:scale(.98)}
+  .primary{background:var(--acc);color:#04210f;font-weight:700;font-size:18px;width:100%}
+  .done{width:100%;height:110px;font-size:42px;background:var(--acc);color:#04210f;font-weight:800;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:12px}
+  .done span{font-size:20px}
+  .done{flex-direction:column;gap:2px;line-height:1.1}
+  .done .bl{font-size:30px;font-weight:800}
+  .done .bs{font-size:14px;font-weight:600;opacity:.75}
+  .done.drv{background:var(--blue);color:#04121f}
+  .phase{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:.03em;margin-left:6px;vertical-align:1px}
+  .phase.drv{background:rgba(78,161,255,.18);color:var(--blue)}
+  .phase.dlv{background:rgba(61,220,132,.18);color:var(--acc)}
+  .split{display:flex;gap:14px;font-size:17px;margin-top:6px;font-variant-numeric:tabular-nums}
+  .split b{font-weight:700}
+  .split .on{text-decoration:underline;text-underline-offset:4px}
+  .ratio{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:12px;background:#0b0d11}
+  .ratio i{display:block;height:100%}
+  .multi{margin-top:12px}
+  .multi .k{margin-bottom:6px}
+  .chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .chips button{padding:12px 0;font-size:20px;font-weight:800;border-radius:12px;background:#0b0d11;border:1px solid var(--line)}
+  .chips button.sel{background:var(--warn);color:#2a1a00;border-color:var(--warn)}
+  .chips button:disabled{opacity:.25}
+  .xn{display:inline-block;background:var(--warn);color:#2a1a00;border-radius:6px;padding:0 5px;font-size:12px;font-weight:800;margin-left:4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  .v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px}
+  .v.small{font-size:20px}
+  .bar{height:10px;background:#0b0d11;border-radius:6px;overflow:hidden;margin-top:12px}
+  .bar>i{display:block;height:100%;background:var(--blue);width:0}
+  .cur .v{font-size:60px;letter-spacing:-1px}
+  .sw small{font-size:.5em;opacity:.7}
+  .cd{font-size:18px;margin-top:4px}
+  .free .v{font-size:48px;text-align:center}
+  .free .row{margin-top:10px}
+  .cur .target{font-size:15px;color:var(--mut);margin-top:2px}
+  .ok{color:var(--acc)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .status{font-size:17px;font-weight:600;text-align:center;padding:12px;border-radius:12px;background:#0b0d11}
+  .tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .tools button{font-size:14px;padding:12px 6px}
+  .paused{background:var(--warn);color:#2a1a00}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+  td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--mut);font-weight:500;font-size:12px}
+  td:last-child,th:last-child{text-align:right}
+  .hidden{display:none!important}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal .card{max-width:360px;width:100%}
+  .modal p{margin:0 0 14px;font-size:17px}
+  .finish{text-align:center}
+  .topr{display:flex;gap:8px;align-items:center}
+  .icon{padding:7px 11px;font-size:15px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+  .exp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .exp button{font-size:14px;padding:12px 8px}
+  .exp .g{background:var(--blue);color:#04121f;font-weight:700}
+  .hitem{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+  .hitem .d{font-weight:700;font-size:16px}
+  .hitem .m{font-size:14px;color:var(--mut);margin-top:3px;font-variant-numeric:tabular-nums}
+  .hhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .hhead button{padding:9px 12px;font-size:14px}
+  .hhead b{font-size:17px}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:#eef0f4;color:#0f1115;padding:12px 18px;border-radius:12px;font-weight:600;font-size:15px;z-index:9;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+  .finish .v{font-size:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1 data-i="title"></h1><div class="topr"><button class="icon" id="histBtn" aria-label="History" style="font-size:20px;padding:5px 10px">📋</button><select id="lang"></select></div></div>
+
+  <!-- SETUP -->
+  <div id="setup">
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="cnt" data-i="parcels"></label>
+          <input id="cnt" type="number" inputmode="numeric" min="1" value="80">
+        </div>
+        <div>
+          <label for="hrs" data-i="hours"></label>
+          <input id="hrs" type="number" inputmode="decimal" min="0.5" step="0.5" value="8">
+        </div>
+      </div>
+      <div class="hint" id="preview"></div>
+    </div>
+    <button class="primary" id="startBtn" data-i="start"></button>
+  </div>
+
+  <!-- RUN -->
+  <div id="run" class="hidden">
+    <div class="card">
+      <div class="grid">
+        <div><div class="k" data-i="elapsed"></div><div class="v" id="elapsed">0:00:00</div></div>
+        <div><div class="k" data-i="left"></div><div class="v" id="left">0:00:00</div></div>
+      </div>
+      <div class="bar"><i id="timeBar"></i></div>
+    </div>
+
+    <div class="card cur">
+      <div class="k"><span id="swHead"></span><span class="phase" id="phTag"></span></div>
+      <div class="v sw" id="curTime">00:00<small>.00</small></div>
+      <div class="split"><span id="spDrive"></span><span id="spDeliv"></span><span id="spTotal"></span></div>
+      <div class="cd"><span id="cdLbl"></span> <b id="curCount">0:00</b></div>
+      <div class="target"><span data-i="normThis"></span> <b id="curTarget">0:00</b></div>
+      <div class="bar"><i id="curBar"></i></div>
+      <div class="multi"><div class="k" data-i="stopN"></div><div class="chips" id="chips"></div></div>
+    </div>
+
+    <button class="done" id="doneBtn"><span class="bl" id="bLbl"></span><span class="bs" id="bSub"></span></button>
+
+    <div class="card" style="margin-top:12px">
+      <div class="grid">
+        <div><div class="k" data-i="driveTot"></div><div class="v small" id="tDrive" style="color:var(--blue)">0:00</div></div>
+        <div><div class="k" data-i="delivTot"></div><div class="v small ok" id="tDeliv">0:00</div></div>
+        <div><div class="k" data-i="avgDrive"></div><div class="v small" id="aDrive">—</div></div>
+        <div><div class="k" data-i="avgDeliv"></div><div class="v small" id="aDeliv">—</div></div>
+      </div>
+      <div class="ratio"><i id="rDrive" style="background:var(--blue);width:0"></i><i id="rDeliv" style="background:var(--acc);width:0"></i></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="grid">
+        <div><div class="k" data-i="next"></div><div class="v small" id="nextT">—</div></div>
+        <div><div class="k" data-i="plan"></div><div class="v small" id="planT">—</div></div>
+        <div><div class="k" data-i="doneCnt"></div><div class="v small" id="doneCnt">0</div></div>
+        <div><div class="k" data-i="leftCnt"></div><div class="v small" id="leftCnt">0</div></div>
+      </div>
+      <div class="bar"><i id="cntBar" style="background:var(--acc)"></i></div>
+    </div>
+
+    <div class="card"><div class="status" id="status">—</div></div>
+
+    <div class="tools">
+      <button id="pauseBtn"></button>
+      <button id="undoBtn" data-i="undo"></button>
+      <button id="resetBtn" data-i="finish"></button>
+    </div>
+
+    <div class="card free" style="margin-top:12px">
+      <div class="k" data-i="freeSw"></div>
+      <div class="v sw" id="fsw">00:00<small>.00</small></div>
+      <div class="row"><button id="fswStart" style="background:var(--acc);color:#04210f;font-weight:700"></button><button id="fswLap" data-i="lap"></button><button id="fswReset" data-i="reset"></button></div>
+      <table style="margin-top:8px"><tbody id="fswLaps"></tbody></table>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="k" style="margin-bottom:6px" data-i="log"></div>
+      <table><thead><tr><th>#</th><th>🚚</th><th>📦</th><th data-i="time"></th><th>±</th></tr></thead><tbody id="log"></tbody></table>
+    </div>
+  </div>
+
+  <!-- FINISH -->
+  <div id="finish" class="hidden">
+    <div class="card finish">
+      <div class="k" data-i="allDone"></div>
+      <div class="v ok" id="fTotal">0:00:00</div>
+      <div class="hint" id="fInfo"></div>
+    </div>
+    <div class="exp" style="margin:0 0 12px"><button id="fSave" data-i="saveXlsx"></button><button class="g" id="fShare" data-i="shareXlsx"></button></div>
+    <button class="primary" id="newBtn" data-i="newShift"></button>
+    <div class="card" style="margin-top:12px">
+      <table><thead><tr><th>#</th><th>🚚</th><th>📦</th><th data-i="time"></th><th>±</th></tr></thead><tbody id="fLog"></tbody></table>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history" class="hidden">
+    <div class="hhead"><button id="hBack" data-i="back"></button><b data-i="history"></b></div>
+    <div class="card">
+      <div class="k" data-i="exportAll"></div>
+      <div class="hint" data-i="kept30"></div>
+      <div class="exp"><button id="aSave" data-i="saveXlsx"></button><button class="g" id="aShare" data-i="shareXlsx"></button></div>
+    </div>
+    <div id="hList"></div>
+  </div>
+
+  <!-- HISTORY DETAIL -->
+  <div id="hDetail" class="hidden">
+    <div class="hhead"><button id="dBack" data-i="back"></button><b id="dTitle"></b></div>
+    <div class="card finish">
+      <div class="v" id="dTotal"></div>
+      <div class="hint" id="dInfo"></div>
+      <div class="exp"><button id="dSave" data-i="saveXlsx"></button><button class="g" id="dShare" data-i="shareXlsx"></button></div>
+    </div>
+    <button id="dDel" style="width:100%;background:#2a1517;color:var(--bad)" data-i="del"></button>
+    <div class="card" style="margin-top:12px">
+      <table><thead><tr><th>#</th><th>🚚</th><th>📦</th><th data-i="time"></th><th>±</th></tr></thead><tbody id="dLog"></tbody></table>
+    </div>
+  </div>
+</div>
+<div class="toast hidden" id="toast"></div>
+
+<div class="modal hidden" id="modal">
+  <div class="card">
+    <p id="mText"></p>
+    <div class="row"><button id="mNo" data-i="no"></button><button id="mYes" style="background:var(--bad)" data-i="yes"></button></div>
+  </div>
+</div>
+
+<script>
+
+const L={
+en:{_:'English',title:'Delivery Timer',parcels:'Parcels per shift',hours:'Shift, hours',preview:'Norm: {t} per parcel · {r} parcels per hour',start:'Start shift',elapsed:'Shift elapsed',left:'Shift left',swHead:'⏱ Stopwatch · parcel {n} of {t}',toNorm:'Until norm ends:',overNorm:'Over norm:',normThis:'Norm for this parcel:',deliveredBtn:'Delivered',next:'For next parcel',plan:'Planned norm',doneCnt:'Delivered',leftCnt:'Parcels left',last:'last',onTrack:'On schedule',ahead:'Ahead: {n} parcels (≈ {t})',behind:'Behind: {n} parcels (≈ {t})',paused:'Break — shift time stopped',pause:'Break',resume:'Resume',undo:'Undo ✓',finish:'End shift',freeSw:'Free stopwatch',swStart:'Start',stop:'Stop',lap:'Lap',reset:'Reset',log:'Log',time:'Time',norm:'Norm',allDone:'All parcels delivered',fInfo:'{n} parcels · average {a}',reserve:'reserve {t}',overrun:'overrun {t}',newShift:'New shift',undoAsk:'Undo the last mark? Time returns to parcel {n}.',resetAsk:'End the shift and reset data?',yes:'Yes',no:'No'},
+de:{_:'Deutsch',title:'Zustell-Timer',parcels:'Pakete pro Schicht',hours:'Schicht, Stunden',preview:'Norm: {t} pro Paket · {r} Pakete pro Stunde',start:'Schicht starten',elapsed:'Schicht vergangen',left:'Schicht übrig',swHead:'⏱ Stoppuhr · Paket {n} von {t}',toNorm:'Bis Normende:',overNorm:'Über Norm:',normThis:'Norm für dieses Paket:',deliveredBtn:'Zugestellt',next:'Für nächstes Paket',plan:'Plan-Norm',doneCnt:'Zugestellt',leftCnt:'Pakete übrig',last:'letztes',onTrack:'Im Plan',ahead:'Vorsprung: {n} Pakete (≈ {t})',behind:'Rückstand: {n} Pakete (≈ {t})',paused:'Pause — Schichtzeit gestoppt',pause:'Pause',resume:'Weiter',undo:'Rückgängig ✓',finish:'Schicht beenden',freeSw:'Freie Stoppuhr',swStart:'Start',stop:'Stopp',lap:'Runde',reset:'Zurücksetzen',log:'Protokoll',time:'Zeit',norm:'Norm',allDone:'Alle Pakete zugestellt',fInfo:'{n} Pakete · Durchschnitt {a}',reserve:'Reserve {t}',overrun:'Überzogen {t}',newShift:'Neue Schicht',undoAsk:'Letzte Markierung rückgängig machen? Zeit geht zurück zu Paket {n}.',resetAsk:'Schicht beenden und Daten löschen?',yes:'Ja',no:'Nein'},
+ru:{_:'Русский',title:'Хронометраж доставки',parcels:'Посылок на смену',hours:'Смена, часов',preview:'Норма: {t} на посылку · {r} посылок в час',start:'Начать смену',elapsed:'Прошло смены',left:'Осталось смены',swHead:'⏱ Секундомер · посылка {n} из {t}',toNorm:'До конца нормы:',overNorm:'Сверх нормы:',normThis:'Норма на эту посылку:',deliveredBtn:'Доставлено',next:'На следующую',plan:'Плановая норма',doneCnt:'Доставлено',leftCnt:'Осталось посылок',last:'последняя',onTrack:'Идёте по графику',ahead:'Опережение: {n} пос. (≈ {t})',behind:'Отставание: {n} пос. (≈ {t})',paused:'Перерыв — время смены остановлено',pause:'Перерыв',resume:'Продолжить',undo:'Отменить ✓',finish:'Завершить',freeSw:'Свободный секундомер',swStart:'Старт',stop:'Стоп',lap:'Круг',reset:'Сброс',log:'Журнал',time:'Время',norm:'Норма',allDone:'Все посылки доставлены',fInfo:'{n} посылок · средняя {a}',reserve:'запас {t}',overrun:'перебор {t}',newShift:'Новая смена',undoAsk:'Отменить последнюю отметку? Время вернётся к посылке {n}.',resetAsk:'Завершить смену и сбросить данные?',yes:'Да',no:'Нет'},
+uk:{_:'Українська',title:'Хронометраж доставки',parcels:'Посилок на зміну',hours:'Зміна, годин',preview:'Норма: {t} на посилку · {r} посилок на годину',start:'Почати зміну',elapsed:'Минуло зміни',left:'Залишилось зміни',swHead:'⏱ Секундомір · посилка {n} з {t}',toNorm:'До кінця норми:',overNorm:'Понад норму:',normThis:'Норма на цю посилку:',deliveredBtn:'Доставлено',next:'На наступну',plan:'Планова норма',doneCnt:'Доставлено',leftCnt:'Залишилось посилок',last:'остання',onTrack:'Йдете за графіком',ahead:'Випередження: {n} пос. (≈ {t})',behind:'Відставання: {n} пос. (≈ {t})',paused:'Перерва — час зміни зупинено',pause:'Перерва',resume:'Продовжити',undo:'Скасувати ✓',finish:'Завершити',freeSw:'Вільний секундомір',swStart:'Старт',stop:'Стоп',lap:'Коло',reset:'Скинути',log:'Журнал',time:'Час',norm:'Норма',allDone:'Усі посилки доставлено',fInfo:'{n} посилок · середня {a}',reserve:'запас {t}',overrun:'перевищення {t}',newShift:'Нова зміна',undoAsk:'Скасувати останню позначку? Час повернеться до посилки {n}.',resetAsk:'Завершити зміну та скинути дані?',yes:'Так',no:'Ні'},
+pl:{_:'Polski',title:'Timer dostaw',parcels:'Paczek na zmianę',hours:'Zmiana, godzin',preview:'Norma: {t} na paczkę · {r} paczek na godzinę',start:'Rozpocznij zmianę',elapsed:'Minęło zmiany',left:'Pozostało zmiany',swHead:'⏱ Stoper · paczka {n} z {t}',toNorm:'Do końca normy:',overNorm:'Ponad normę:',normThis:'Norma na tę paczkę:',deliveredBtn:'Dostarczono',next:'Na następną',plan:'Norma planowa',doneCnt:'Dostarczono',leftCnt:'Pozostało paczek',last:'ostatnia',onTrack:'Zgodnie z planem',ahead:'Przed planem: {n} pacz. (≈ {t})',behind:'Opóźnienie: {n} pacz. (≈ {t})',paused:'Przerwa — czas zmiany zatrzymany',pause:'Przerwa',resume:'Wznów',undo:'Cofnij ✓',finish:'Zakończ',freeSw:'Wolny stoper',swStart:'Start',stop:'Stop',lap:'Okrążenie',reset:'Reset',log:'Dziennik',time:'Czas',norm:'Norma',allDone:'Wszystkie paczki dostarczone',fInfo:'{n} paczek · średnio {a}',reserve:'zapas {t}',overrun:'przekroczenie {t}',newShift:'Nowa zmiana',undoAsk:'Cofnąć ostatnie oznaczenie? Czas wróci do paczki {n}.',resetAsk:'Zakończyć zmianę i wyczyścić dane?',yes:'Tak',no:'Nie'},
+ro:{_:'Română',title:'Cronometru livrări',parcels:'Colete pe tură',hours:'Tură, ore',preview:'Normă: {t} pe colet · {r} colete pe oră',start:'Începe tura',elapsed:'Tură trecută',left:'Tură rămasă',swHead:'⏱ Cronometru · colet {n} din {t}',toNorm:'Până la final normă:',overNorm:'Peste normă:',normThis:'Normă pentru acest colet:',deliveredBtn:'Livrat',next:'Pentru următorul',plan:'Normă planificată',doneCnt:'Livrate',leftCnt:'Colete rămase',last:'ultimul',onTrack:'Conform programului',ahead:'Avans: {n} colete (≈ {t})',behind:'Întârziere: {n} colete (≈ {t})',paused:'Pauză — timpul turei oprit',pause:'Pauză',resume:'Continuă',undo:'Anulează ✓',finish:'Încheie tura',freeSw:'Cronometru liber',swStart:'Start',stop:'Stop',lap:'Tur',reset:'Resetare',log:'Jurnal',time:'Timp',norm:'Normă',allDone:'Toate coletele livrate',fInfo:'{n} colete · medie {a}',reserve:'rezervă {t}',overrun:'depășire {t}',newShift:'Tură nouă',undoAsk:'Anulezi ultima marcare? Timpul revine la coletul {n}.',resetAsk:'Închei tura și ștergi datele?',yes:'Da',no:'Nu'},
+tr:{_:'Türkçe',title:'Teslimat Zamanlayıcı',parcels:'Vardiya başına paket',hours:'Vardiya, saat',preview:'Norm: paket başına {t} · saatte {r} paket',start:'Vardiyayı başlat',elapsed:'Geçen vardiya',left:'Kalan vardiya',swHead:'⏱ Kronometre · paket {n} / {t}',toNorm:'Norm bitimine:',overNorm:'Norm aşımı:',normThis:'Bu paket için norm:',deliveredBtn:'Teslim edildi',next:'Sonraki paket için',plan:'Planlanan norm',doneCnt:'Teslim edilen',leftCnt:'Kalan paket',last:'son',onTrack:'Plana uygun',ahead:'Önde: {n} paket (≈ {t})',behind:'Geride: {n} paket (≈ {t})',paused:'Mola — vardiya süresi durduruldu',pause:'Mola',resume:'Devam',undo:'Geri al ✓',finish:'Vardiyayı bitir',freeSw:'Serbest kronometre',swStart:'Başlat',stop:'Durdur',lap:'Tur',reset:'Sıfırla',log:'Kayıt',time:'Süre',norm:'Norm',allDone:'Tüm paketler teslim edildi',fInfo:'{n} paket · ortalama {a}',reserve:'kalan {t}',overrun:'aşım {t}',newShift:'Yeni vardiya',undoAsk:'Son işaret geri alınsın mı? Süre {n}. pakete döner.',resetAsk:'Vardiya bitirilsin ve veriler silinsin mi?',yes:'Evet',no:'Hayır'}
+};
+
+const L2={
+en:{history:'History',back:'← Back',kept30:'Shifts are kept for 30 days',exportAll:'All shifts (30 days)',saveXlsx:'Save Excel to phone',shareXlsx:'Send / Google Drive',noHistory:'No saved shifts yet',del:'Delete',delAsk:'Delete this shift from history?',saved:'File saved',failed:'Could not save the file',hDate:'Date',hStart:'Start',hEnd:'End',hPlanned:'Planned parcels',hDelivered:'Delivered',hShiftLen:'Shift length',hWork:'Work time',hBreaks:'Breaks',hAvg:'Average per parcel',hResult:'Reserve (+) / overrun (−)',hParcel:'Parcel #',hTime:'Time',hNorm:'Norm',hDiff:'Difference',hAt:'Delivered at',shSummary:'Shifts',shDeliv:'Deliveries',pShort:'{d}/{n} parcels'},
+de:{history:'Verlauf',back:'← Zurück',kept30:'Schichten werden 30 Tage gespeichert',exportAll:'Alle Schichten (30 Tage)',saveXlsx:'Excel aufs Handy speichern',shareXlsx:'Senden / Google Drive',noHistory:'Noch keine gespeicherten Schichten',del:'Löschen',delAsk:'Diese Schicht aus dem Verlauf löschen?',saved:'Datei gespeichert',failed:'Datei konnte nicht gespeichert werden',hDate:'Datum',hStart:'Beginn',hEnd:'Ende',hPlanned:'Geplante Pakete',hDelivered:'Zugestellt',hShiftLen:'Schichtlänge',hWork:'Arbeitszeit',hBreaks:'Pausen',hAvg:'Durchschnitt pro Paket',hResult:'Reserve (+) / Überzug (−)',hParcel:'Paket Nr.',hTime:'Zeit',hNorm:'Norm',hDiff:'Differenz',hAt:'Zugestellt um',shSummary:'Schichten',shDeliv:'Zustellungen',pShort:'{d}/{n} Pakete'},
+ru:{history:'История',back:'← Назад',kept30:'Смены хранятся 30 дней',exportAll:'Все смены (30 дней)',saveXlsx:'Сохранить Excel на телефон',shareXlsx:'Отправить / Google Диск',noHistory:'Сохранённых смен пока нет',del:'Удалить',delAsk:'Удалить эту смену из истории?',saved:'Файл сохранён',failed:'Не удалось сохранить файл',hDate:'Дата',hStart:'Начало',hEnd:'Конец',hPlanned:'Плановых посылок',hDelivered:'Доставлено',hShiftLen:'Длина смены',hWork:'Рабочее время',hBreaks:'Перерывы',hAvg:'Среднее на посылку',hResult:'Запас (+) / перебор (−)',hParcel:'№ посылки',hTime:'Время',hNorm:'Норма',hDiff:'Разница',hAt:'Доставлено в',shSummary:'Смены',shDeliv:'Доставки',pShort:'{d}/{n} посылок'},
+uk:{history:'Історія',back:'← Назад',kept30:'Зміни зберігаються 30 днів',exportAll:'Усі зміни (30 днів)',saveXlsx:'Зберегти Excel на телефон',shareXlsx:'Надіслати / Google Диск',noHistory:'Збережених змін поки немає',del:'Видалити',delAsk:'Видалити цю зміну з історії?',saved:'Файл збережено',failed:'Не вдалося зберегти файл',hDate:'Дата',hStart:'Початок',hEnd:'Кінець',hPlanned:'Планових посилок',hDelivered:'Доставлено',hShiftLen:'Тривалість зміни',hWork:'Робочий час',hBreaks:'Перерви',hAvg:'Середнє на посилку',hResult:'Запас (+) / перевищення (−)',hParcel:'№ посилки',hTime:'Час',hNorm:'Норма',hDiff:'Різниця',hAt:'Доставлено о',shSummary:'Зміни',shDeliv:'Доставки',pShort:'{d}/{n} посилок'},
+pl:{history:'Historia',back:'← Wstecz',kept30:'Zmiany są przechowywane 30 dni',exportAll:'Wszystkie zmiany (30 dni)',saveXlsx:'Zapisz Excel w telefonie',shareXlsx:'Wyślij / Dysk Google',noHistory:'Brak zapisanych zmian',del:'Usuń',delAsk:'Usunąć tę zmianę z historii?',saved:'Plik zapisany',failed:'Nie udało się zapisać pliku',hDate:'Data',hStart:'Początek',hEnd:'Koniec',hPlanned:'Planowane paczki',hDelivered:'Dostarczono',hShiftLen:'Długość zmiany',hWork:'Czas pracy',hBreaks:'Przerwy',hAvg:'Średnio na paczkę',hResult:'Zapas (+) / przekroczenie (−)',hParcel:'Nr paczki',hTime:'Czas',hNorm:'Norma',hDiff:'Różnica',hAt:'Dostarczono o',shSummary:'Zmiany',shDeliv:'Dostawy',pShort:'{d}/{n} paczek'},
+ro:{history:'Istoric',back:'← Înapoi',kept30:'Turele sunt păstrate 30 de zile',exportAll:'Toate turele (30 de zile)',saveXlsx:'Salvează Excel pe telefon',shareXlsx:'Trimite / Google Drive',noHistory:'Încă nu există ture salvate',del:'Șterge',delAsk:'Ștergi această tură din istoric?',saved:'Fișier salvat',failed:'Fișierul nu a putut fi salvat',hDate:'Data',hStart:'Început',hEnd:'Sfârșit',hPlanned:'Colete planificate',hDelivered:'Livrate',hShiftLen:'Durata turei',hWork:'Timp de lucru',hBreaks:'Pauze',hAvg:'Medie pe colet',hResult:'Rezervă (+) / depășire (−)',hParcel:'Nr. colet',hTime:'Timp',hNorm:'Normă',hDiff:'Diferență',hAt:'Livrat la',shSummary:'Ture',shDeliv:'Livrări',pShort:'{d}/{n} colete'},
+tr:{history:'Geçmiş',back:'← Geri',kept30:'Vardiyalar 30 gün saklanır',exportAll:'Tüm vardiyalar (30 gün)',saveXlsx:"Excel'i telefona kaydet",shareXlsx:'Gönder / Google Drive',noHistory:'Henüz kayıtlı vardiya yok',del:'Sil',delAsk:'Bu vardiya geçmişten silinsin mi?',saved:'Dosya kaydedildi',failed:'Dosya kaydedilemedi',hDate:'Tarih',hStart:'Başlangıç',hEnd:'Bitiş',hPlanned:'Planlanan paket',hDelivered:'Teslim edilen',hShiftLen:'Vardiya süresi',hWork:'Çalışma süresi',hBreaks:'Molalar',hAvg:'Paket başı ortalama',hResult:'Kalan (+) / aşım (−)',hParcel:'Paket no',hTime:'Süre',hNorm:'Norm',hDiff:'Fark',hAt:'Teslim saati',shSummary:'Vardiyalar',shDeliv:'Teslimatlar',pShort:'{d}/{n} paket'}
+};
+for(const k in L2) Object.assign(L[k],L2[k]);
+
+const L3={
+en:{bDeliv:'📦 Delivery',bDelivSub:'arrived — start handing over',bDrive:'🚚 Drive',bDriveSub:'delivered — drive to next',bLast:'✓ Delivered',bLastSub:'last parcel — finish shift',phDrive:'DRIVING',phDeliv:'DELIVERING',driveTot:'Driving total',delivTot:'Delivery total',avgDrive:'Avg driving',avgDeliv:'Avg delivery',undoPhase:'Undo "Delivery" and go back to driving?',hDrive:'Driving',hDeliv:'Delivery',hAvgDrive:'Avg driving',hAvgDeliv:'Avg delivery'},
+de:{bDeliv:'📦 Zustellung',bDelivSub:'angekommen — Übergabe starten',bDrive:'🚚 Fahrt',bDriveSub:'zugestellt — weiter zum nächsten',bLast:'✓ Zugestellt',bLastSub:'letztes Paket — Schicht beenden',phDrive:'FAHRT',phDeliv:'ZUSTELLUNG',driveTot:'Fahrzeit gesamt',delivTot:'Zustellzeit gesamt',avgDrive:'Ø Fahrt',avgDeliv:'Ø Zustellung',undoPhase:'„Zustellung“ rückgängig machen und zurück zur Fahrt?',hDrive:'Fahrt',hDeliv:'Zustellung',hAvgDrive:'Ø Fahrt',hAvgDeliv:'Ø Zustellung'},
+ru:{bDeliv:'📦 Доставка',bDelivSub:'приехал — начинаю отдавать',bDrive:'🚚 Езда',bDriveSub:'доставил — еду дальше',bLast:'✓ Доставлено',bLastSub:'последняя посылка — конец смены',phDrive:'ЕЗДА',phDeliv:'ДОСТАВКА',driveTot:'Езда всего',delivTot:'Доставка всего',avgDrive:'Средняя езда',avgDeliv:'Средняя доставка',undoPhase:'Отменить «Доставку» и вернуться к езде?',hDrive:'Езда',hDeliv:'Доставка',hAvgDrive:'Средняя езда',hAvgDeliv:'Средняя доставка'},
+uk:{bDeliv:'📦 Доставка',bDelivSub:'приїхав — починаю віддавати',bDrive:'🚚 Їзда',bDriveSub:'доставив — їду далі',bLast:'✓ Доставлено',bLastSub:'остання посилка — кінець зміни',phDrive:'ЇЗДА',phDeliv:'ДОСТАВКА',driveTot:'Їзда всього',delivTot:'Доставка всього',avgDrive:'Середня їзда',avgDeliv:'Середня доставка',undoPhase:'Скасувати «Доставку» й повернутися до їзди?',hDrive:'Їзда',hDeliv:'Доставка',hAvgDrive:'Середня їзда',hAvgDeliv:'Середня доставка'},
+pl:{bDeliv:'📦 Doręczenie',bDelivSub:'na miejscu — zaczynam wydawać',bDrive:'🚚 Jazda',bDriveSub:'doręczone — jadę dalej',bLast:'✓ Dostarczono',bLastSub:'ostatnia paczka — koniec zmiany',phDrive:'JAZDA',phDeliv:'DORĘCZENIE',driveTot:'Jazda łącznie',delivTot:'Doręczenia łącznie',avgDrive:'Śr. jazda',avgDeliv:'Śr. doręczenie',undoPhase:'Cofnąć „Doręczenie” i wrócić do jazdy?',hDrive:'Jazda',hDeliv:'Doręczenie',hAvgDrive:'Śr. jazda',hAvgDeliv:'Śr. doręczenie'},
+ro:{bDeliv:'📦 Livrare',bDelivSub:'am ajuns — încep predarea',bDrive:'🚚 Condus',bDriveSub:'livrat — merg mai departe',bLast:'✓ Livrat',bLastSub:'ultimul colet — final de tură',phDrive:'CONDUS',phDeliv:'LIVRARE',driveTot:'Condus total',delivTot:'Livrare total',avgDrive:'Medie condus',avgDeliv:'Medie livrare',undoPhase:'Anulezi „Livrare” și revii la condus?',hDrive:'Condus',hDeliv:'Livrare',hAvgDrive:'Medie condus',hAvgDeliv:'Medie livrare'},
+tr:{bDeliv:'📦 Teslimat',bDelivSub:'vardım — teslime başla',bDrive:'🚚 Sürüş',bDriveSub:'teslim edildi — sonrakine git',bLast:'✓ Teslim edildi',bLastSub:'son paket — vardiyayı bitir',phDrive:'SÜRÜŞ',phDeliv:'TESLİMAT',driveTot:'Toplam sürüş',delivTot:'Toplam teslimat',avgDrive:'Ort. sürüş',avgDeliv:'Ort. teslimat',undoPhase:'"Teslimat" geri alınıp sürüşe dönülsün mü?',hDrive:'Sürüş',hDeliv:'Teslimat',hAvgDrive:'Ort. sürüş',hAvgDeliv:'Ort. teslimat'}
+};
+for(const k in L3) Object.assign(L[k],L3[k]);
+
+const L4={
+en:{stopN:'👥 Clients at this stop',stops:'Stops',hStop:'Stop #',hParcels:'Parcels #',hCount:'Clients',fStops:'{s} stops'},
+de:{stopN:'👥 Kunden an diesem Stopp',stops:'Stopps',hStop:'Stopp Nr.',hParcels:'Pakete Nr.',hCount:'Kunden',fStops:'{s} Stopps'},
+ru:{stopN:'👥 Клиентов на этой остановке',stops:'Остановок',hStop:'№ остановки',hParcels:'№ посылок',hCount:'Клиентов',fStops:'{s} остановок'},
+uk:{stopN:'👥 Клієнтів на цій зупинці',stops:'Зупинок',hStop:'№ зупинки',hParcels:'№ посилок',hCount:'Клієнтів',fStops:'{s} зупинок'},
+pl:{stopN:'👥 Klientów na tym przystanku',stops:'Przystanki',hStop:'Nr przystanku',hParcels:'Nr paczek',hCount:'Klienci',fStops:'{s} przystanków'},
+ro:{stopN:'👥 Clienți la această oprire',stops:'Opriri',hStop:'Nr. oprire',hParcels:'Nr. colete',hCount:'Clienți',fStops:'{s} opriri'},
+tr:{stopN:'👥 Bu duraktaki müşteri',stops:'Duraklar',hStop:'Durak no',hParcels:'Paket no',hCount:'Müşteri',fStops:'{s} durak'}
+};
+for(const k in L4) Object.assign(L[k],L4[k]);
+const LK='delivery-lang';
+let lang='en';
+try{lang=localStorage.getItem(LK)||''}catch(e){}
+if(!L[lang]){const n=(navigator.language||'en').slice(0,2).toLowerCase();lang=L[n]?n:'en'}
+function t(k,v){let s=(L[lang]&&L[lang][k])||L.en[k]||k;if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s}
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.title=t('title');
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+}
+(function(){
+  const sel=document.getElementById('lang');
+  ['en','de','ru','uk','pl','ro','tr'].forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=L[k]._;sel.appendChild(o)});
+  sel.value=lang;
+  sel.onchange=()=>{lang=sel.value;try{localStorage.setItem(LK,lang)}catch(e){};applyLang();if(typeof show==='function')show();swLaps&&swLaps();};
+  applyLang();
+})();
+
+const KEY='delivery-timer-v1';
+const $=id=>document.getElementById(id);
+let S=null;
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){return null}}
+
+function fmt(ms,withH){
+  const neg=ms<0; ms=Math.abs(ms);
+  const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
+  const p=n=>String(n).padStart(2,'0');
+  const out=(withH||h>0)?`${h}:${p(m)}:${p(s)}`:`${m}:${p(s)}`;
+  return (neg?'−':'')+out;
+}
+// working time (pauses excluded)
+function fmtSW(ms){
+  ms=Math.max(0,ms);
+  const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60,cs=Math.floor(ms%1000/10);
+  const p=n=>String(n).padStart(2,'0');
+  return (h?h+':':'')+p(m)+':'+p(s)+'<small>.'+p(cs)+'</small>';
+}
+function work(now){
+  let paused=S.pausedTotal + (S.pauseStart? now-S.pauseStart : 0);
+  return now - S.start - paused;
+}
+
+function preview(){
+  const n=+$('cnt').value, h=+$('hrs').value;
+  $('preview').textContent = (n>0&&h>0) ? t('preview',{t:fmt(h*3600000/n),r:(n/h).toFixed(1)}) : '';
+}
+$('cnt').oninput=preview; $('hrs').oninput=preview;
+
+$('startBtn').onclick=()=>{
+  const n=Math.floor(+$('cnt').value), h=+$('hrs').value;
+  if(!(n>0&&h>0)) return;
+  const now=Date.now();
+  S={total:n,shift:h*3600000,start:now,pausedTotal:0,pauseStart:null,
+     curStartWork:0,curTarget:h*3600000/n,log:[]};
+  save(); show();
+};
+
+function cnt(log){return log.reduce((a,r)=>a+(r.n||1),0)}
+function stopN(){const rem=S.total-cnt(S.log);return Math.max(1,Math.min(S.stopN||1,rem,5))}
+function renderChips(){
+  const rem=S.total-cnt(S.log), n=stopN(), c=$('chips');
+  if(!c._b){c.innerHTML=[1,2,3,4,5].map(i=>`<button data-n="${i}">${i}</button>`).join('');
+    c.querySelectorAll('button').forEach(b=>b.onclick=()=>{S.stopN=+b.dataset.n;save();render();buzz(20)});c._b=1}
+  c.querySelectorAll('button').forEach(b=>{const i=+b.dataset.n;b.classList.toggle('sel',i===n);b.disabled=i>rem});
+}
+function buzz(ms){try{ if(window.Android&&Android.vibrate) Android.vibrate(ms); else if(navigator.vibrate) navigator.vibrate(ms);}catch(e){}}
+$('doneBtn').onclick=()=>{
+  if(S.pauseStart) togglePause();
+  const now=Date.now(), w=work(now);
+  if(S.phase!=='deliv'){            // ЕЗДА -> ДОСТАВКА
+    S.phase='deliv'; S.phaseStartWork=w; S.curDriveMs=w-S.curStartWork;
+    save(); render(); buzz(40); return;
+  }
+  // ДОСТАВКА -> ЕЗДА (посылка завершена)
+  const dur=w - S.curStartWork, n=stopN();
+  S.log.push({dur,target:S.curTarget*n,at:w,ts:now,drive:S.curDriveMs,deliv:w-S.phaseStartWork,n});
+  S.phase='drive'; S.phaseStartWork=w; S.curDriveMs=0; S.stopN=1;
+  S.curStartWork=w;
+  const remParcels=S.total - cnt(S.log);
+  if(remParcels<=0){S.finished=true; archive(S,w); save(); show(); return;}
+  S.curTarget=Math.max(0,(S.shift - w)/remParcels);
+  save(); render(); buzz(80);
+};
+
+$('undoBtn').onclick=()=>{
+  if(S.phase==='deliv'){
+    ask(t('undoPhase'),()=>{S.phase='drive';S.phaseStartWork=S.curStartWork;S.curDriveMs=0;save();render()});
+    return;
+  }
+  if(!S.log.length) return;
+  const lastN=S.log[S.log.length-1].n||1;
+  ask(t('undoAsk',{n:cnt(S.log)-lastN+1}),()=>{
+    const last=S.log.pop();
+    S.curStartWork = last.at - last.dur;
+    S.curTarget = last.target/(last.n||1);
+    S.stopN = last.n||1;
+    if(last.deliv!=null){S.phase='deliv';S.phaseStartWork=last.at-last.deliv;S.curDriveMs=last.drive||0}
+    else {S.phase='drive';S.phaseStartWork=S.curStartWork;S.curDriveMs=0}
+    save(); render();
+  });
+};
+
+function togglePause(){
+  const now=Date.now();
+  if(S.pauseStart){S.pausedTotal+=now-S.pauseStart;S.pauseStart=null}
+  else S.pauseStart=now;
+  save(); render();
+}
+$('pauseBtn').onclick=togglePause;
+
+$('resetBtn').onclick=()=>ask(t('resetAsk'),()=>{if(S.pauseStart){S.pausedTotal+=Date.now()-S.pauseStart;S.pauseStart=null} archive(S,work(Date.now())); S=null;try{localStorage.removeItem(KEY)}catch(e){};show()});
+$('newBtn').onclick=()=>{S=null;try{localStorage.removeItem(KEY)}catch(e){};show()};
+
+function ask(text,yes){
+  $('mText').textContent=text; $('modal').classList.remove('hidden');
+  $('mYes').onclick=()=>{$('modal').classList.add('hidden');yes()};
+  $('mNo').onclick=()=>$('modal').classList.add('hidden');
+}
+
+function splitTot(log){let dr=0,dl=0,n=0,p=0;log.forEach(r=>{if(r.deliv!=null){dr+=r.drive||0;dl+=r.deliv;n++;p+=(r.n||1)}});return{dr,dl,n,p}}
+function splitHtml(log){const x=splitTot(log);return (log.length?'<br>'+t('fStops',{s:log.length}):'')+(x.n?` · 🚚 ${fmt(x.dr,true)} · 📦 ${fmt(x.dl,true)}<br>⌀ 🚚 ${fmt(x.dr/x.n)} / 📦 ${fmt(x.dl/x.p)}`:'')}
+function rangeStr(log,i){let a=1;for(let k=0;k<i;k++)a+=(log[k].n||1);const n=log[i].n||1;return n>1?`${a}–${a+n-1}`:String(a)}
+function logRows(log){
+  log=log||S.log;
+  return log.map((r,i)=>{
+    const d=r.dur-r.target, c=d<=0?'ok':'bad';
+    const dr=r.deliv!=null?fmt(r.drive||0):'—', dl=r.deliv!=null?fmt(r.deliv):'—';
+    const nn=r.n||1;
+    return `<tr><td>${rangeStr(log,i)}${nn>1?'<span class="xn">×'+nn+'</span>':''}</td><td style="color:var(--blue)">${dr}</td><td class="ok">${dl}</td><td>${fmt(r.dur)}</td><td class="${c}">${d<=0?'':'+'}${fmt(d)}</td></tr>`;
+  }).reverse().join('');
+}
+
+function show(){
+  const hv=view==='history', dv=typeof view==='number';
+  $('history').classList.toggle('hidden',!hv);
+  $('hDetail').classList.toggle('hidden',!dv);
+  $('histBtn').classList.toggle('hidden',hv||dv);
+  if(hv){renderHistory();['setup','run','finish'].forEach(i=>$(i).classList.add('hidden'));return}
+  if(dv){renderDetail(view);['setup','run','finish'].forEach(i=>$(i).classList.add('hidden'));return}
+  $('setup').classList.toggle('hidden',!!S);
+  $('run').classList.toggle('hidden',!S||!!S.finished);
+  $('finish').classList.toggle('hidden',!S||!S.finished);
+  if(!S){preview();return}
+  if(S.finished){
+    const w=S.log.length?S.log[S.log.length-1].at:0;
+    $('fTotal').textContent=fmt(w,true);
+    const diff=S.shift-w;
+    $('fInfo').innerHTML=t('fInfo',{n:S.total,a:fmt(w/S.total)})+' · '+(diff>=0?'<span class="ok">'+t('reserve',{t:fmt(diff,true)})+'</span>':'<span class="bad">'+t('overrun',{t:fmt(-diff,true)})+'</span>');
+    $('fInfo').innerHTML+=splitHtml(S.log);
+    $('fLog').innerHTML=logRows();
+    return;
+  }
+  render();
+}
+
+function render(){
+  if(!S||S.finished||view!==null) return;
+  const now=Date.now(), w=work(now);
+  const done=cnt(S.log), rem=S.total-done, nStop=stopN();
+  const cur=w-S.curStartWork;
+  const tgt=S.curTarget*nStop;
+  const over=cur-tgt;
+  const plan=S.shift/S.total;
+
+  $('elapsed').textContent=fmt(w,true);
+  const left=S.shift-w;
+  $('left').textContent=fmt(left,true);
+  $('left').className='v'+(left<0?' bad':'');
+  $('timeBar').style.width=Math.min(100,w/S.shift*100)+'%';
+
+  const dlv=S.phase==='deliv';
+  const phStart=dlv?S.phaseStartWork:S.curStartWork;
+  const drv=dlv?(S.curDriveMs||0):cur, dl=dlv?w-S.phaseStartWork:0;
+  $('swHead').textContent=t('swHead',{n:nStop>1?`${done+1}–${done+nStop}`:done+1,t:S.total});
+  renderChips();
+  const tag=$('phTag'); tag.textContent=dlv?'📦 '+t('phDeliv'):'🚚 '+t('phDrive'); tag.className='phase '+(dlv?'dlv':'drv');
+  $('curTime').innerHTML=fmtSW(w-phStart);
+  $('spDrive').innerHTML=`🚚 <b>${fmt(drv)}</b>`; $('spDrive').className=dlv?'':'on';
+  $('spDeliv').innerHTML=`📦 <b>${fmt(dl)}</b>`; $('spDeliv').className=dlv?'on':'';
+  $('spTotal').innerHTML=`= <b>${fmt(cur)}</b>`;
+  const last=rem-nStop<=0;
+  const bb=$('doneBtn'); bb.classList.toggle('drv',!dlv);
+  $('bLbl').textContent=dlv?(last?t('bLast'):t('bDrive')):t('bDeliv');
+  $('bSub').textContent=dlv?(last?t('bLastSub'):t('bDriveSub')):t('bDelivSub');
+  const tot=splitTot(S.log); const tdr=tot.dr+drv, tdl=tot.dl+dl;
+  $('tDrive').textContent=fmt(tdr,true); $('tDeliv').textContent=fmt(tdl,true);
+  $('aDrive').textContent=tot.n?fmt(tot.dr/tot.n):'—'; $('aDeliv').textContent=tot.p?fmt(tot.dl/tot.p):'—';
+  const sumT=tdr+tdl||1; $('rDrive').style.width=(tdr/sumT*100)+'%'; $('rDeliv').style.width=(tdl/sumT*100)+'%';
+  $('cdLbl').textContent=over<=0?t('toNorm'):t('overNorm');
+  $('curCount').textContent=(over<=0?'':'+')+fmt(Math.abs(over));
+  $('curCount').className=over<=0?'':'bad';
+  $('curTarget').innerHTML=fmt(tgt)+(nStop>1?` <span class="xn">${fmt(S.curTarget)} ×${nStop}</span>`:'');
+  const ratio=tgt>0?cur/tgt:2;
+  const cls=ratio<0.8?'ok':ratio<=1?'warn':'bad';
+  $('curTime').className='v '+cls;
+  const cb=$('curBar'); cb.style.width=Math.min(100,ratio*100)+'%';
+  cb.style.background= cls==='ok'?'var(--acc)':cls==='warn'?'var(--warn)':'var(--bad)';
+
+  // next: if current is delivered right now
+  if(rem-nStop>0){
+    const nt=(S.shift-w)/(rem-nStop);
+    $('nextT').textContent=fmt(Math.max(0,nt));
+    $('nextT').className='v small '+(nt>=plan?'ok':nt>=plan*0.8?'warn':'bad');
+  } else {$('nextT').textContent=t('last');$('nextT').className='v small'}
+  $('planT').textContent=fmt(plan);
+  $('doneCnt').textContent=done; $('leftCnt').textContent=rem;
+  $('cntBar').style.width=(done/S.total*100)+'%';
+
+  // ahead / behind schedule
+  const expected=w/plan;           // how many should be done by now
+  const delta=done-expected;       // in parcels
+  const st=$('status');
+  if(Math.abs(delta)<0.5){st.innerHTML='<span class="ok">'+t('onTrack')+'</span>'}
+  else if(delta>0){st.innerHTML='<span class="ok">'+t('ahead',{n:delta.toFixed(1),t:fmt(delta*plan)})+'</span>'}
+  else{st.innerHTML='<span class="bad">'+t('behind',{n:(-delta).toFixed(1),t:fmt(-delta*plan)})+'</span>'}
+
+  const pb=$('pauseBtn');
+  pb.textContent=S.pauseStart?'▶ '+t('resume'):t('pause');
+  pb.classList.toggle('paused',!!S.pauseStart);
+  if(S.pauseStart) st.innerHTML='<span class="warn">'+t('paused')+'</span>';
+
+  $('undoBtn').disabled=!done; $('undoBtn').style.opacity=done?1:.4;
+  const tb=$('log'); const html=logRows(); if(tb._h!==html){tb.innerHTML=html;tb._h=html}
+}
+
+
+// ===== history (30 days) =====
+const HK='delivery-history-v1', DAY=86400000;
+let view=null; // null | 'history' | record id
+function loadH(){try{return JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){return[]}}
+function saveH(h){try{localStorage.setItem(HK,JSON.stringify(h))}catch(e){}}
+function pruneH(h){const lim=Date.now()-30*DAY;return h.filter(r=>r.start>=lim).sort((a,b)=>b.start-a.start)}
+function archive(st,w){
+  if(!st||!st.log||!st.log.length) return;
+  const last=st.log[st.log.length-1];
+  const rec={id:st.start,start:st.start,end:Math.max(last.ts||0,Date.now()),total:st.total,shift:st.shift,paused:st.pausedTotal||0,work:w,finished:!!st.finished,log:st.log};
+  let h=loadH().filter(r=>r.id!==rec.id); h.push(rec); saveH(pruneH(h));
+}
+function getRec(id){return loadH().find(r=>r.id===id)}
+const dloc=()=>({en:'en-GB',de:'de-DE',ru:'ru-RU',uk:'uk-UA',pl:'pl-PL',ro:'ro-RO',tr:'tr-TR'})[lang];
+function dStr(ts){return new Date(ts).toLocaleDateString(dloc(),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})}
+function tStr(ts){return new Date(ts).toLocaleTimeString(dloc(),{hour:'2-digit',minute:'2-digit'})}
+function resultHtml(r){const d=r.shift-r.work;return d>=0?'<span class="ok">'+t('reserve',{t:fmt(d,true)})+'</span>':'<span class="bad">'+t('overrun',{t:fmt(-d,true)})+'</span>'}
+function renderHistory(){
+  const h=pruneH(loadH()); saveH(h);
+  $('hList').innerHTML=h.length?h.map(r=>`<button class="hitem" data-id="${r.id}"><div class="d">${dStr(r.start)} · ${tStr(r.start)}–${tStr(r.end)}</div><div class="m">${t('pShort',{d:cnt(r.log),n:r.total})} · ${t('fStops',{s:r.log.length})} · ⌀ ${fmt(r.work/cnt(r.log))} · ${resultHtml(r)}</div></button>`).join(''):`<div class="hint" style="text-align:center;padding:24px">${t('noHistory')}</div>`;
+  $('hList').querySelectorAll('.hitem').forEach(b=>b.onclick=()=>{view=+b.dataset.id;show();scrollTo(0,0)});
+  $('aSave').disabled=$('aShare').disabled=!h.length;
+}
+function renderDetail(id){
+  const r=getRec(id); if(!r){view='history';return show()}
+  $('dTitle').textContent=dStr(r.start);
+  $('dTotal').textContent=fmt(r.work,true);
+  $('dInfo').innerHTML=`${tStr(r.start)}–${tStr(r.end)} · ${t('pShort',{d:cnt(r.log),n:r.total})} · ⌀ ${fmt(r.work/cnt(r.log))}<br>${resultHtml(r)}`;
+  $('dInfo').innerHTML+=splitHtml(r.log);
+  $('dLog').innerHTML=logRows(r.log);
+}
+$('histBtn').onclick=()=>{view='history';show();scrollTo(0,0)};
+$('hBack').onclick=()=>{view=null;show()};
+$('dBack').onclick=()=>{view='history';show()};
+$('dDel').onclick=()=>ask(t('delAsk'),()=>{saveH(loadH().filter(r=>r.id!==view));view='history';show()});
+$('aSave').onclick=()=>exportRecs(pruneH(loadH()),'save','30days');
+$('aShare').onclick=()=>exportRecs(pruneH(loadH()),'share','30days');
+$('dSave').onclick=()=>exportRecs([getRec(view)],'save');
+$('dShare').onclick=()=>exportRecs([getRec(view)],'share');
+$('fSave').onclick=()=>exportRecs([getRec(S.start)].filter(Boolean),'save');
+$('fShare').onclick=()=>exportRecs([getRec(S.start)].filter(Boolean),'share');
+
+let toastT;
+function toast(msg){const e=$('toast');e.textContent=msg;e.classList.remove('hidden');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.add('hidden'),2600)}
+function toastKey(k){toast(t(k))}
+
+// ===== Excel (.xlsx) export =====
+function sgn(ms){return (ms>=0?'+':'−')+fmt(Math.abs(ms),true)}
+function serial(ts){return (ts-new Date(ts).getTimezoneOffset()*60000)/DAY+25569}
+function buildRows(recs){
+  const sum=[[t('hDate'),t('hStart'),t('hEnd'),t('hPlanned'),t('hDelivered'),t('hShiftLen'),t('hWork'),t('hBreaks'),t('stops'),t('driveTot'),t('delivTot'),t('hAvg'),t('hAvgDrive'),t('hAvgDeliv'),t('hResult')]];
+  const del=[[t('hDate'),t('hStart'),t('hStop'),t('hParcels'),t('hCount'),t('hDrive'),t('hDeliv'),t('hTime'),t('hNorm'),t('hDiff'),t('hAt')]];
+  recs.slice().sort((a,b)=>a.start-b.start).forEach(r=>{
+    const sp=splitTot(r.log);
+    sum.push([{d:r.start,f:4},{d:r.start,f:3},{d:r.end,f:3},r.total,cnt(r.log),{t:r.shift},{t:r.work},{t:r.paused},r.log.length,sp.n?{t:sp.dr}:'',sp.n?{t:sp.dl}:'',{t:r.work/cnt(r.log)},sp.n?{t:sp.dr/sp.n}:'',sp.p?{t:sp.dl/sp.p}:'',sgn(r.shift-r.work)]);
+    r.log.forEach((x,i)=>del.push([{d:r.start,f:4},{d:r.start,f:3},i+1,rangeStr(r.log,i),x.n||1,x.deliv!=null?{t:x.drive||0}:'',x.deliv!=null?{t:x.deliv}:'',{t:x.dur},{t:x.target},((x.dur-x.target)>0?'+':'−')+fmt(Math.abs(x.dur-x.target)),x.ts?{d:x.ts,f:3}:'']));
+  });
+  return [[t('shSummary'),sum,[14,9,9,12,11,12,12,10,10,12,12,14,12,12,16]],[t('shDeliv'),del,[14,9,10,10,9,10,10,10,10,11,12]]];
+}
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function colL(i){let s='';i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26}return s}
+function sheetXml(rows,widths){
+  const cols='<cols>'+widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w+2}" customWidth="1"/>`).join('')+'</cols>';
+  const body=rows.map((row,ri)=>`<row r="${ri+1}">`+row.map((v,ci)=>{
+    const ref=colL(ci)+(ri+1), hs=ri===0?' s="1"':'';
+    if(v===''||v==null) return '';
+    if(typeof v==='number') return `<c r="${ref}"${hs}><v>${v}</v></c>`;
+    if(typeof v==='object'&&'t' in v) return `<c r="${ref}" s="2"><v>${Math.max(0,v.t)/DAY}</v></c>`;
+    if(typeof v==='object'&&'d' in v) return `<c r="${ref}" s="${v.f}"><v>${serial(v.d)}</v></c>`;
+    return `<c r="${ref}" t="inlineStr"${hs}><is><t>${xe(v)}</t></is></c>`;
+  }).join('')+'</row>').join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData></worksheet>`;
+}
+function buildXlsx(recs){
+  const sheets=buildRows(recs), H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const files={
+    '[Content_Types].xml':H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')+'</Types>',
+    '_rels/.rels':H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml':H+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((sh,i)=>`<sheet name="${xe(sh[0].slice(0,31))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')+'</sheets></workbook>',
+    'xl/_rels/workbook.xml.rels':H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')+`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml':H+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="hh:mm"/><numFmt numFmtId="165" formatCode="dd.mm.yyyy"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="46" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'
+  };
+  sheets.forEach((sh,i)=>files[`xl/worksheets/sheet${i+1}.xml`]=sheetXml(sh[1],sh[2]));
+  return zipStore(files);
+}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  for(const name in files){
+    const nb=enc.encode(name), data=enc.encode(files[name]), crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(lh.buffer),nb,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);
+    ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);
+    cen.push(new Uint8Array(ch.buffer),nb);
+    off+=30+nb.length+data.length;
+  }
+  const csz=cen.reduce((a,b)=>a+b.length,0), n=Object.keys(files).length;
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,n,true);end.setUint16(10,n,true);end.setUint32(12,csz,true);end.setUint32(16,off,true);
+  const all=[...parts,...cen,new Uint8Array(end.buffer)], out=new Uint8Array(all.reduce((a,b)=>a+b.length,0));
+  let p=0; all.forEach(b=>{out.set(b,p);p+=b.length}); return out;
+}
+function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+const XMIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function exportRecs(recs,mode,tag){
+  recs=recs.filter(Boolean); if(!recs.length){toast(t('noHistory'));return}
+  const d=new Date(recs.length===1?recs[0].start:Date.now()), p=n=>String(n).padStart(2,'0');
+  const name=`DeliveryTimer_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}${tag?'_'+tag:'_'+p(d.getHours())+p(d.getMinutes())}.xlsx`;
+  const bytes=buildXlsx(recs);
+  try{
+    if(window.Android&&Android.saveFile){ mode==='share'?Android.shareFile(b64(bytes),name,XMIME):Android.saveFile(b64(bytes),name,XMIME); return }
+  }catch(e){}
+  try{
+    const f=new File([bytes],name,{type:XMIME});
+    if(mode==='share'&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>{});return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+  }catch(e){toast(t('failed'))}
+}
+
+// free stopwatch
+const SWK='delivery-sw-v1';
+let SW={run:false,t0:0,acc:0,laps:[]};
+try{const r=localStorage.getItem(SWK); if(r) SW=JSON.parse(r)}catch(e){}
+function swSave(){try{localStorage.setItem(SWK,JSON.stringify(SW))}catch(e){}}
+function swVal(){return SW.acc+(SW.run?Date.now()-SW.t0:0)}
+function swRender(){
+  $('fsw').innerHTML=fmtSW(swVal());
+  const b=$('fswStart'); b.textContent=SW.run?t('stop'):(SW.acc?t('resume'):t('swStart'));
+  b.style.background=SW.run?'var(--bad)':'var(--acc)'; b.style.color=SW.run?'#fff':'#04210f';
+}
+function swLaps(){$('fswLaps').innerHTML=SW.laps.map((l,i)=>`<tr><td>${t('lap')} ${i+1}</td><td>${fmtSW(l)}</td></tr>`).reverse().join('')}
+$('fswStart').onclick=()=>{ if(SW.run){SW.acc+=Date.now()-SW.t0;SW.run=false}else{SW.t0=Date.now();SW.run=true} swSave();swRender(); };
+$('fswLap').onclick=()=>{ if(!swVal())return; SW.laps.push(swVal()); swSave(); swLaps(); };
+$('fswReset').onclick=()=>{ SW={run:false,t0:0,acc:0,laps:[]}; swSave(); swRender(); swLaps(); };
+swLaps();
+
+S=load(); show();
+setInterval(()=>{render();swRender()},50);
+document.addEventListener('visibilitychange',render);
+</script>
+</body>
+</html>
