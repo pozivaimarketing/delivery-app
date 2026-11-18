@@ -11,9 +11,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - run: chmod +x gradlew && ./gradlew assembleDebug
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - run: bash build.sh
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
-          name: DeliveryTimer-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: DeliveryTimer-release
+          path: out/*
